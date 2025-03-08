@@ -26,6 +26,7 @@ __bump_lockptr
 __c_dot_utf8
 __c_dot_utf8_locale
 __c_locale
+__c_longjmp
 __cancel
 __clock
 __clock_gettime
@@ -552,6 +553,9 @@ __wasilibc_tls_size
 __wasilibc_unlinkat
 __wasilibc_utimens
 __wasm_call_dtors
+__wasm_longjmp
+__wasm_setjmp
+__wasm_setjmp_test
 __wasm_sigaction
 __wasm_signal
 __wcscoll_l
@@ -1153,7 +1157,6 @@ logbf
 logbl
 logf
 logl
-longjmp
 lrand48
 lrint
 lrintf
@@ -1492,7 +1495,6 @@ setgid
 setgrent
 setgroups
 setitimer
-setjmp
 setkey
 setlinebuf
 setlocale
@@ -1535,7 +1537,6 @@ sigprocmask
 sigqueue
 sigrelse
 sigset
-sigsetjmp
 sigsuspend
 sigtimedwait
 sigwait

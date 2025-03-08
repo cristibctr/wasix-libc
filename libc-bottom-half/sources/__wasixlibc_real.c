@@ -39,6 +39,21 @@ __wasi_errno_t __wasi_fd_dup(
     return (uint16_t) ret;
 }
 
+int32_t __imported_wasix_32v1_fd_dup2(int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3) __attribute__((
+    __import_module__("wasix_32v1"),
+    __import_name__("fd_dup2")
+));
+
+__wasi_errno_t __wasi_fd_dup2(
+    __wasi_fd_t fd,
+    __wasi_fd_t min_result_fd,
+    __wasi_bool_t cloexec,
+    __wasi_fd_t *retptr0
+){
+    int32_t ret = __imported_wasix_32v1_fd_dup2((int32_t) fd, (int32_t) min_result_fd, (int32_t) cloexec, (intptr_t) retptr0);
+    return (uint16_t) ret;
+}
+
 int32_t __imported_wasix_32v1_fd_event(int64_t arg0, int32_t arg1, int32_t arg2) __attribute__((
     __import_module__("wasix_32v1"),
     __import_name__("fd_event")
@@ -279,6 +294,53 @@ _Noreturn void __wasi_stack_restore(
     __imported_wasix_32v1_stack_restore((int32_t) snapshot, (int64_t) val);
 }
 
+int32_t __imported_wasix_32v1_path_open2(int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int64_t arg5, int64_t arg6, int32_t arg7, int32_t arg8, int32_t arg9) __attribute__((
+    __import_module__("wasix_32v1"),
+    __import_name__("path_open2")
+));
+
+__wasi_errno_t __wasi_path_open2(
+    __wasi_fd_t fd,
+    __wasi_lookupflags_t dirflags,
+    const char *path,
+    __wasi_oflags_t oflags,
+    __wasi_rights_t fs_rights_base,
+    __wasi_rights_t fs_rights_inheriting,
+    __wasi_fdflags_t fdflags,
+    __wasi_fdflagsext_t fdflagsext,
+    __wasi_fd_t *retptr0
+){
+    size_t path_len = strlen(path);
+    int32_t ret = __imported_wasix_32v1_path_open2((int32_t) fd, dirflags, (intptr_t) path, (intptr_t) path_len, oflags, fs_rights_base, fs_rights_inheriting, fdflags, fdflagsext, (intptr_t) retptr0);
+    return (uint16_t) ret;
+}
+
+int32_t __imported_wasix_32v1_fd_fdflags_get(int32_t arg0, int32_t arg1) __attribute__((
+    __import_module__("wasix_32v1"),
+    __import_name__("fd_fdflags_get")
+));
+
+__wasi_errno_t __wasi_fd_fdflags_get(
+    __wasi_fd_t fd,
+    __wasi_fdflagsext_t *retptr0
+){
+    int32_t ret = __imported_wasix_32v1_fd_fdflags_get((int32_t) fd, (intptr_t) retptr0);
+    return (uint16_t) ret;
+}
+
+int32_t __imported_wasix_32v1_fd_fdflags_set(int32_t arg0, int32_t arg1) __attribute__((
+    __import_module__("wasix_32v1"),
+    __import_name__("fd_fdflags_set")
+));
+
+__wasi_errno_t __wasi_fd_fdflags_set(
+    __wasi_fd_t fd,
+    __wasi_fdflagsext_t flags
+){
+    int32_t ret = __imported_wasix_32v1_fd_fdflags_set((int32_t) fd, flags);
+    return (uint16_t) ret;
+}
+
 int32_t __imported_wasix_32v1_proc_raise_interval(int32_t arg0, int64_t arg1, int32_t arg2) __attribute__((
     __import_module__("wasix_32v1"),
     __import_name__("proc_raise_interval")
@@ -336,6 +398,26 @@ _Noreturn void __wasi_proc_exec2(
     __imported_wasix_32v1_proc_exec2((intptr_t) name, (intptr_t) name_len, (intptr_t) args, (intptr_t) args_len, (intptr_t) envs, (intptr_t) envs_len);
 }
 
+int32_t __imported_wasix_32v1_proc_exec3(int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, int32_t arg7, int32_t arg8) __attribute__((
+    __import_module__("wasix_32v1"),
+    __import_name__("proc_exec3")
+));
+
+__wasi_errno_t __wasi_proc_exec3(
+    const char *name,
+    const char *args,
+    const char *envs,
+    __wasi_bool_t search_path,
+    const char *path
+){
+    size_t name_len = strlen(name);
+    size_t args_len = strlen(args);
+    size_t envs_len = strlen(envs);
+    size_t path_len = strlen(path);
+    int32_t ret = __imported_wasix_32v1_proc_exec3((intptr_t) name, (intptr_t) name_len, (intptr_t) args, (intptr_t) args_len, (intptr_t) envs, (intptr_t) envs_len, (int32_t) search_path, (intptr_t) path, (intptr_t) path_len);
+    return (uint16_t) ret;
+}
+
 int32_t __imported_wasix_32v1_proc_spawn(int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, int32_t arg7, int32_t arg8, int32_t arg9, int32_t arg10, int32_t arg11, int32_t arg12) __attribute__((
     __import_module__("wasix_32v1"),
     __import_name__("proc_spawn")
@@ -357,6 +439,31 @@ __wasi_errno_t __wasi_proc_spawn(
     size_t preopen_len = strlen(preopen);
     size_t working_dir_len = strlen(working_dir);
     int32_t ret = __imported_wasix_32v1_proc_spawn((intptr_t) name, (intptr_t) name_len, (int32_t) chroot, (intptr_t) args, (intptr_t) args_len, (intptr_t) preopen, (intptr_t) preopen_len, (int32_t) stdin, (int32_t) stdout, (int32_t) stderr, (intptr_t) working_dir, (intptr_t) working_dir_len, (intptr_t) retptr0);
+    return (uint16_t) ret;
+}
+
+int32_t __imported_wasix_32v1_proc_spawn2(int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4, int32_t arg5, int32_t arg6, int32_t arg7, int32_t arg8, int32_t arg9, int32_t arg10, int32_t arg11, int32_t arg12, int32_t arg13) __attribute__((
+    __import_module__("wasix_32v1"),
+    __import_name__("proc_spawn2")
+));
+
+__wasi_errno_t __wasi_proc_spawn2(
+    const char *name,
+    const char *args,
+    const char *envs,
+    const __wasi_proc_spawn_fd_op_t *fd_ops,
+    size_t fd_ops_len,
+    const __wasi_signal_disposition_t *signal_dispositions,
+    size_t signal_dispositions_len,
+    __wasi_bool_t search_path,
+    const char *path,
+    __wasi_pid_t *retptr0
+){
+    size_t name_len = strlen(name);
+    size_t args_len = strlen(args);
+    size_t envs_len = strlen(envs);
+    size_t path_len = strlen(path);
+    int32_t ret = __imported_wasix_32v1_proc_spawn2((intptr_t) name, (intptr_t) name_len, (intptr_t) args, (intptr_t) args_len, (intptr_t) envs, (intptr_t) envs_len, (intptr_t) fd_ops, (intptr_t) fd_ops_len, (intptr_t) signal_dispositions, (intptr_t) signal_dispositions_len, (int32_t) search_path, (intptr_t) path, (intptr_t) path_len, (intptr_t) retptr0);
     return (uint16_t) ret;
 }
 
@@ -409,6 +516,30 @@ __wasi_errno_t __wasi_proc_signal(
     __wasi_signal_t signal
 ){
     int32_t ret = __imported_wasix_32v1_proc_signal((int32_t) pid, (int32_t) signal);
+    return (uint16_t) ret;
+}
+
+int32_t __imported_wasix_32v1_proc_signals_get(int32_t arg0) __attribute__((
+    __import_module__("wasix_32v1"),
+    __import_name__("proc_signals_get")
+));
+
+__wasi_errno_t __wasi_proc_signals_get(
+    uint8_t * buf
+){
+    int32_t ret = __imported_wasix_32v1_proc_signals_get((int32_t) buf);
+    return (uint16_t) ret;
+}
+
+int32_t __imported_wasix_32v1_proc_signals_sizes_get(int32_t arg0) __attribute__((
+    __import_module__("wasix_32v1"),
+    __import_name__("proc_signals_sizes_get")
+));
+
+__wasi_errno_t __wasi_proc_signals_sizes_get(
+    __wasi_size_t *retptr0
+){
+    int32_t ret = __imported_wasix_32v1_proc_signals_sizes_get((intptr_t) retptr0);
     return (uint16_t) ret;
 }
 
@@ -640,6 +771,22 @@ __wasi_errno_t __wasi_sock_open(
     __wasi_fd_t *retptr0
 ){
     int32_t ret = __imported_wasix_32v1_sock_open((int32_t) af, (int32_t) socktype, (int32_t) sock_proto, (intptr_t) retptr0);
+    return (uint16_t) ret;
+}
+
+int32_t __imported_wasix_32v1_sock_pair(int32_t arg0, int32_t arg1, int32_t arg2, int32_t arg3, int32_t arg4) __attribute__((
+    __import_module__("wasix_32v1"),
+    __import_name__("sock_pair")
+));
+
+__wasi_errno_t __wasi_sock_pair(
+    __wasi_address_family_t af,
+    __wasi_sock_type_t socktype,
+    __wasi_sock_proto_t sock_proto,
+    __wasi_fd_t *retptr0,
+    __wasi_fd_t *retptr1
+){
+    int32_t ret = __imported_wasix_32v1_sock_pair((int32_t) af, (int32_t) socktype, (int32_t) sock_proto, (intptr_t) retptr0, (intptr_t) retptr1);
     return (uint16_t) ret;
 }
 

@@ -961,6 +961,39 @@ _Static_assert(sizeof(__wasi_signal_t) == 1, "witx calculated size");
 _Static_assert(_Alignof(__wasi_signal_t) == 1, "witx calculated align");
 
 /**
+ * Signal action.
+ */
+typedef uint8_t __wasi_disposition_t;
+
+/**
+ * Default action.
+ */
+#define __WASI_DISPOSITION_DEFAULT (UINT8_C(0))
+
+/**
+ * Ignore the signal.
+ */
+#define __WASI_DISPOSITION_IGNORE (UINT8_C(1))
+
+_Static_assert(sizeof(__wasi_disposition_t) == 1, "witx calculated size");
+_Static_assert(_Alignof(__wasi_disposition_t) == 1, "witx calculated align");
+
+/**
+ * A signal and its corresponding disposition.
+ */
+typedef struct __wasi_signal_disposition_t {
+    __wasi_signal_t sig;
+
+    __wasi_disposition_t disp;
+
+} __wasi_signal_disposition_t;
+
+_Static_assert(sizeof(__wasi_signal_disposition_t) == 2, "witx calculated size");
+_Static_assert(_Alignof(__wasi_signal_disposition_t) == 1, "witx calculated align");
+_Static_assert(offsetof(__wasi_signal_disposition_t, sig) == 0, "witx calculated offset");
+_Static_assert(offsetof(__wasi_signal_disposition_t, disp) == 1, "witx calculated offset");
+
+/**
  * A region of memory for scatter/gather reads.
  */
 /**
@@ -1605,6 +1638,18 @@ typedef uint16_t __wasi_eventfdflags_t;
  * Indicates if this event file description will run as a semaphore
  */
 #define __WASI_EVENTFDFLAGS_SEMAPHORE ((__wasi_eventfdflags_t)(1 << 0))
+
+/**
+ * Actual file descriptor flags. The fdflags type from WASI corresponds to
+ * file status flags, which is why we had to come up with a weird name for
+ * this type.
+ */
+typedef uint16_t __wasi_fdflagsext_t;
+
+/**
+ * Close this file in the child process when spawning one.
+ */
+#define __WASI_FDFLAGSEXT_CLOEXEC ((__wasi_fdflagsext_t)(1 << 0))
 
 /**
  * Rect that represents the TTY.
@@ -3604,6 +3649,82 @@ _Static_assert(offsetof(__wasi_epoll_event_t, events) == 0, "witx calculated off
 _Static_assert(offsetof(__wasi_epoll_event_t, data) == 8, "witx calculated offset");
 
 /**
+ * Names of FD operations performed during proc_spawn2.
+ */
+typedef uint8_t __wasi_proc_spawn_fd_op_name_t;
+
+/**
+ * Close an FD.
+ */
+#define __WASI_PROC_SPAWN_FD_OP_NAME_CLOSE (UINT8_C(0))
+
+/**
+ * Duplicate (i.e. renumber) an FD.
+ */
+#define __WASI_PROC_SPAWN_FD_OP_NAME_DUP2 (UINT8_C(1))
+
+/**
+ * Open a file.
+ */
+#define __WASI_PROC_SPAWN_FD_OP_NAME_OPEN (UINT8_C(2))
+
+/**
+ * Change directory to a path.
+ */
+#define __WASI_PROC_SPAWN_FD_OP_NAME_CHDIR (UINT8_C(3))
+
+/**
+ * Change directory to an FD.
+ */
+#define __WASI_PROC_SPAWN_FD_OP_NAME_FCHDIR (UINT8_C(4))
+
+_Static_assert(sizeof(__wasi_proc_spawn_fd_op_name_t) == 1, "witx calculated size");
+_Static_assert(_Alignof(__wasi_proc_spawn_fd_op_name_t) == 1, "witx calculated align");
+
+/**
+ * An FD operation performed during proc_spawn2,
+ * which is the backing syscall for posix_spawn.
+ */
+typedef struct __wasi_proc_spawn_fd_op_t {
+    __wasi_proc_spawn_fd_op_name_t cmd;
+
+    __wasi_fd_t fd;
+
+    __wasi_fd_t src_fd;
+
+    uint8_t * path;
+
+    __wasi_pointersize_t path_len;
+
+    __wasi_lookupflags_t dirflags;
+
+    __wasi_oflags_t oflags;
+
+    __wasi_rights_t fs_rights_base;
+
+    __wasi_rights_t fs_rights_inheriting;
+
+    __wasi_fdflags_t fdflags;
+
+    __wasi_fdflagsext_t fdflagsext;
+
+} __wasi_proc_spawn_fd_op_t;
+
+_Static_assert(sizeof(__wasi_proc_spawn_fd_op_t) == 56, "witx calculated size");
+_Static_assert(_Alignof(__wasi_proc_spawn_fd_op_t) == 8, "witx calculated align");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, cmd) == 0, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, fd) == 4, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, src_fd) == 8, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, path) == 12, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, path_len) == 16, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, dirflags) == 20, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, oflags) == 24, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, fs_rights_base) == 32, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, fs_rights_inheriting) == 40, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, fdflags) == 48, "witx calculated offset");
+_Static_assert(offsetof(__wasi_proc_spawn_fd_op_t, fdflagsext) == 50, "witx calculated offset");
+
+/**
  * @defgroup wasix_32v1
  * @{
  */
@@ -3629,6 +3750,15 @@ __wasi_errno_t __wasi_clock_time_set(
  */
 __wasi_errno_t __wasi_fd_dup(
     __wasi_fd_t fd,
+    __wasi_fd_t *retptr0
+) __attribute__((__warn_unused_result__));
+/**
+ * Atomically duplicate a file handle.
+ */
+__wasi_errno_t __wasi_fd_dup2(
+    __wasi_fd_t fd,
+    __wasi_fd_t min_result_fd,
+    __wasi_bool_t cloexec,
     __wasi_fd_t *retptr0
 ) __attribute__((__warn_unused_result__));
 /**
@@ -3850,6 +3980,70 @@ _Noreturn void __wasi_stack_restore(
     __wasi_longsize_t val
 );
 /**
+ * Open a file or directory.
+ * The returned file descriptor is not guaranteed to be the lowest-numbered
+ * file descriptor not currently open; it is randomized to prevent
+ * applications from depending on making assumptions about indexes, since this
+ * is error-prone in multi-threaded contexts. The returned file descriptor is
+ * guaranteed to be less than 2**31.
+ * Note: This is similar to `openat` in POSIX.
+ * Recreated in WASIX from the original WASI function to add support for
+ * fdflagsext.
+ * @return
+ * The file descriptor of the file that has been opened.
+ */
+__wasi_errno_t __wasi_path_open2(
+    __wasi_fd_t fd,
+    /**
+     * Flags determining the method of how the path is resolved.
+     */
+    __wasi_lookupflags_t dirflags,
+    /**
+     * The relative path of the file or directory to open, relative to the
+     * `path_open::fd` directory.
+     */
+    const char *path,
+    /**
+     * The method by which to open the file.
+     */
+    __wasi_oflags_t oflags,
+    /**
+     * The initial rights of the newly created file descriptor. The
+     * implementation is allowed to return a file descriptor with fewer rights
+     * than specified, if and only if those rights do not apply to the type of
+     * file being opened.
+     * The *base* rights are rights that will apply to operations using the file
+     * descriptor itself, while the *inheriting* rights are rights that apply to
+     * file descriptors derived from it.
+     */
+    __wasi_rights_t fs_rights_base,
+    __wasi_rights_t fs_rights_inheriting,
+    __wasi_fdflags_t fdflags,
+    __wasi_fdflagsext_t fdflagsext,
+    __wasi_fd_t *retptr0
+) __attribute__((__warn_unused_result__));
+/**
+ * Get the FD flags of a file descriptor (fdflagsext).
+ * Note: This returns similar flags to `fsync(fd, F_GETFD)` in POSIX.
+ * @return
+ * The buffer where the file descriptor's attributes are stored.
+ */
+__wasi_errno_t __wasi_fd_fdflags_get(
+    __wasi_fd_t fd,
+    __wasi_fdflagsext_t *retptr0
+) __attribute__((__warn_unused_result__));
+/**
+ * Adjust the FD flags associated with a file descriptor.
+ * Note: This is similar to `fcntl(fd, F_SETFD, flags)` in POSIX.
+ */
+__wasi_errno_t __wasi_fd_fdflags_set(
+    __wasi_fd_t fd,
+    /**
+     * The desired values of the file descriptor flags.
+     */
+    __wasi_fdflagsext_t flags
+) __attribute__((__warn_unused_result__));
+/**
  * Send a signal to the process of the calling thread on a regular basis
  * Note: This is similar to `setitimer` in POSIX.
  */
@@ -3926,6 +4120,40 @@ _Noreturn void __wasi_proc_exec2(
     const char *envs
 );
 /**
+ * execve()  executes  the  program  referred to by pathname.  This causes the
+ * program that is currently being run by the calling process to  be  replaced
+ * with  a  new  program, with newly initialized stack, heap, and (initialized
+ * and uninitialized) data segments.
+ * 
+ * If the named process does not exist an error will be returned.
+ * @return
+ * If the named process does not exist an error will be returned.
+ */
+__wasi_errno_t __wasi_proc_exec3(
+    /**
+     * Name of the process to be spawned
+     */
+    const char *name,
+    /**
+     * List of the arguments to pass the process
+     * (entries are separated by line feeds)
+     */
+    const char *args,
+    /**
+     * List of the env vars to pass the process
+     * (entries are separated by line feeds)
+     */
+    const char *envs,
+    /**
+     * Whether to search for the file in PATH.
+     */
+    __wasi_bool_t search_path,
+    /**
+     * The current value of the PATH env var.
+     */
+    const char *path
+) __attribute__((__warn_unused_result__));
+/**
  * Spawns a new process within the context of the parent process
  * (i.e. this process). It inherits the filesystem and sandbox
  * permissions but runs standalone.
@@ -3969,6 +4197,56 @@ __wasi_errno_t __wasi_proc_spawn(
      */
     const char *working_dir,
     __wasi_process_handles_t *retptr0
+) __attribute__((__warn_unused_result__));
+/**
+ * Spawns a new process within the context of the parent process
+ * (i.e. this process). It inherits the filesystem and sandbox
+ * permissions but runs standalone.
+ * @return
+ * If the named process does not exist an error will be returned.
+ */
+__wasi_errno_t __wasi_proc_spawn2(
+    /**
+     * Name of the process to be spawned
+     */
+    const char *name,
+    /**
+     * List of the arguments to pass the process
+     * (entries are separated by line feeds)
+     */
+    const char *args,
+    /**
+     * List of the env vars to pass the process
+     * (entries are separated by line feeds)
+     */
+    const char *envs,
+    /**
+     * List of FD operations to perform before
+     * spawning the new process.
+     */
+    const __wasi_proc_spawn_fd_op_t *fd_ops,
+    /**
+     * The length of the array pointed to by `fd_ops`.
+     */
+    size_t fd_ops_len,
+    /**
+     * List of signal dispositions to override
+     * for the new process.
+     */
+    const __wasi_signal_disposition_t *signal_dispositions,
+    /**
+     * The length of the array pointed to by `signal_dispositions`.
+     */
+    size_t signal_dispositions_len,
+    /**
+     * Whether to search for the file in PATH.
+     */
+    __wasi_bool_t search_path,
+    /**
+     * The current value of the PATH env var.
+     */
+    const char *path,
+    __wasi_pid_t *retptr0
 ) __attribute__((__warn_unused_result__));
 /**
  * Returns the handle of the current process
@@ -4018,6 +4296,21 @@ __wasi_errno_t __wasi_proc_signal(
      * Signal to send to the thread
      */
     __wasi_signal_t signal
+) __attribute__((__warn_unused_result__));
+/**
+ * Read host-provided signal dispositions.
+ * The size of the array should match that returned by `proc_signals_sizes_get`.
+ */
+__wasi_errno_t __wasi_proc_signals_get(
+    uint8_t * buf
+) __attribute__((__warn_unused_result__));
+/**
+ * Return host-provided signal count.
+ * @return
+ * Returns the number of signal dispositions, or an error.
+ */
+__wasi_errno_t __wasi_proc_signals_sizes_get(
+    __wasi_size_t *retptr0
 ) __attribute__((__warn_unused_result__));
 /**
  * Explicitly requests for the runtime to create a
@@ -4207,6 +4500,34 @@ __wasi_errno_t __wasi_sock_open(
      */
     __wasi_sock_proto_t sock_proto,
     __wasi_fd_t *retptr0
+) __attribute__((__warn_unused_result__));
+/**
+ * Create a pair of interconnected sockets.
+ * 
+ * creates a pair of interconnected sockets and returns both file
+ * descriptors. The file descriptors returned by a successful
+ * call will be the lowest-numbered file descriptors not currently open
+ * for the process.
+ * 
+ * Note: This is similar to `socketpair` in POSIX using PF_INET
+ * @return
+ * The file descriptors of the sockets that have been opened.
+ */
+__wasi_errno_t __wasi_sock_pair(
+    /**
+     * Address family
+     */
+    __wasi_address_family_t af,
+    /**
+     * Socket type, either datagram or stream
+     */
+    __wasi_sock_type_t socktype,
+    /**
+     * Socket protocol
+     */
+    __wasi_sock_proto_t sock_proto,
+    __wasi_fd_t *retptr0,
+    __wasi_fd_t *retptr1
 ) __attribute__((__warn_unused_result__));
 /**
  * Sets a particular socket setting

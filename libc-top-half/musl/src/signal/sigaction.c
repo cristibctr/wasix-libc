@@ -1,6 +1,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <string.h>
+#include <sysexits.h>
 #include "syscall.h"
 #include "pthread_impl.h"
 #include "libc.h"
@@ -177,6 +178,7 @@ volatile int __eintr_valid_flag;
 
 #ifdef __wasilibc_unmodified_upstream
 #else
+__attribute__((export_name("__wasm_signal")))
 void __wasm_signal(int sig) {
 	if (sig-32U < 3 || sig-1U >= _NSIG-1) {
 		return;
@@ -241,7 +243,9 @@ int __libc_sigaction(int sig, const struct sigaction *restrict sa, struct sigact
 	} else {
 		LOCK(__eintr_handler_lock);
 		ksa_old = __eintr_handler_callbacks[sig];
-		__eintr_handler_callbacks[sig] = ksa;
+		if (sa) {
+			__eintr_handler_callbacks[sig] = ksa;
+		}
 		UNLOCK(__eintr_handler_lock);
 		r = 0;
 	}
@@ -326,4 +330,65 @@ int __sigaction_external_default(int sig, const struct sigaction *restrict sa, s
 }
 
 weak_alias(__sigaction_external_default, sigaction_external_default);
+
+__attribute__((export_name("__wasm_sigaction")))
+int __wasm_sigaction(int sig, int action) {
+	void (*a)(int);
+
+	switch (action) {
+		case __WASI_DISPOSITION_DEFAULT:
+			a = SIG_DFL;
+			break;
+		case __WASI_DISPOSITION_IGNORE:
+			a = SIG_IGN;
+			break;
+		default:
+			return -1;
+	}
+
+	struct sigaction sa = { .sa_handler = a, .sa_flags = SA_RESTART };
+	if (__sigaction(sig, &sa, NULL) < 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+void __wasi_init_signals() {
+    __wasi_errno_t err;
+	int sigaction_ret;
+
+    __wasi_size_t signal_count;
+    err = __wasi_proc_signals_sizes_get(&signal_count);
+    if (err != __WASI_ERRNO_SUCCESS) {
+        _Exit(EX_OSERR);
+    }
+	
+	__wasi_signal_disposition_t *sig_dispositions = calloc(signal_count, sizeof(__wasi_signal_disposition_t));
+    if (sig_dispositions == NULL) {
+        _Exit(EX_SOFTWARE);
+    }
+
+    err = __wasi_proc_signals_get((uint8_t *)sig_dispositions);
+    if (err != __WASI_ERRNO_SUCCESS) {
+        free(sig_dispositions);
+        _Exit(EX_OSERR);
+    }
+
+	for (int i = 0; i < signal_count; ++i) {
+		sigaction_ret = __wasm_sigaction((int)sig_dispositions[i].sig, (int)sig_dispositions[i].disp);
+		if (sigaction_ret == -1) {
+			free(sig_dispositions);
+			_Exit(EX_OSERR);
+		}
+	}
+
+	free(sig_dispositions);
+
+	// Unconditionally register the signal handler at startup - otherwise, the host will
+	// eat up signals that are sent before the first sigaction call.
+	if (a_cas(&__eintr_callback_registered, 0, 1) == 0) {
+		__wasi_callback_signal("__wasm_signal");
+	}
+}
 #endif
