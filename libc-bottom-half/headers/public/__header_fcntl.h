@@ -57,4 +57,19 @@
 
 #define AT_FDCWD (-2)
 
+/* File locking types for fcntl() */
+#define F_RDLCK     0
+#define F_WRLCK     1
+#define F_UNLCK     2
+
+/* File locking commands for fcntl() */
+#define F_GETLK     7
+#define F_SETLK     8
+#define F_SETLKW    9
+
+/* Define _POSIX_MAPPED_FILES which is required by some applications */
+#ifndef _POSIX_MAPPED_FILES
+#define _POSIX_MAPPED_FILES 200809L
+#endif
+
 #endif

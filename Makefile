@@ -64,6 +64,9 @@ LIBC_BOTTOM_HALF_ALL_SOURCES = \
 LIBC_BOTTOM_HALF_ALL_SOURCES := $(filter-out $(LIBC_BOTTOM_HALF_SOURCES)/chdir.c,$(LIBC_BOTTOM_HALF_ALL_SOURCES))
 LIBC_BOTTOM_HALF_ALL_SOURCES := $(LIBC_BOTTOM_HALF_ALL_SOURCES) $(LIBC_BOTTOM_HALF_SOURCES)/chdir.c
 
+# Add the WASIX file locking implementation
+LIBC_BOTTOM_HALF_ALL_SOURCES := $(LIBC_BOTTOM_HALF_ALL_SOURCES) $(LIBC_BOTTOM_HALF_DIR)/sources/wasix_fcntl_locks.c
+
 LIBWASI_EMULATED_MMAN_SOURCES = \
     $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/mman -name \*.c))
 LIBWASI_EMULATED_PROCESS_CLOCKS_SOURCES = \
@@ -449,21 +452,16 @@ MUSL_OMIT_HEADERS += \
     "stddef.h"
 
 # Use the WASI errno definitions.
-MUSL_OMIT_HEADERS += \
-    "bits/errno.h"
 
 # Remove headers that aren't supported yet or that aren't relevant for WASI.
 MUSL_OMIT_HEADERS += \
     "sys/procfs.h" \
     "sys/user.h" \
     "sys/kd.h" "sys/vt.h" "sys/soundcard.h" "sys/sem.h" \
-    "sys/shm.h" "sys/msg.h" "sys/ipc.h" "sys/ptrace.h" \
-    "sys/statfs.h" \
+    "sys/shm.h" "sys/msg.h" "sys/ptrace.h" \
     "bits/kd.h" "bits/vt.h" "bits/soundcard.h" "bits/sem.h" \
-    "bits/shm.h" "bits/msg.h" "bits/ipc.h" "bits/ptrace.h" \
-    "bits/statfs.h" \
+    "bits/shm.h" "bits/msg.h" "bits/ptrace.h" \
     "sys/vfs.h" \
-    "sys/statvfs.h" \
     "sys/syslog.h" \
     "ucontext.h" "sys/ucontext.h" \
     "utmp.h" "utmpx.h" \
@@ -484,7 +482,6 @@ MUSL_OMIT_HEADERS += \
     "link.h" "bits/link.h" \
     "scsi/scsi.h" "scsi/scsi_ioctl.h" "scsi/sg.h" \
     "sys/auxv.h" \
-    "mntent.h" \
     "resolv.h" \
     "pty.h" \
     "dlfcn.h" \

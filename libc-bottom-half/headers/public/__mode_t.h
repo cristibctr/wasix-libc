@@ -8,7 +8,7 @@
 #define S_IFDIR (0x4000)
 #define S_IFLNK (0xa000)
 #define S_IFREG (0x8000)
-#define S_IFSOCK (0xc000)
+#define S_IFSOCK (0xd000)  /* Changed from 0xc000 to avoid collision with S_IFIFO */
 #define S_IFIFO (0xc000)
 
 #define S_ISBLK(m) (((m)&S_IFMT) == S_IFBLK)

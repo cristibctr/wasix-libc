@@ -6,3 +6,4 @@ sysroot64
 build
 .vscode
 dist
+.aider*

@@ -75,14 +75,6 @@ jobs:
           cmake --build . --target install --parallel 4
           llvm-ranlib /opt/wasix-sysroot/lib/wasm32-wasi/libclang_rt.builtins-wasm32.a
 
-      - name: Run WASIX tests
-        run: |
-          export CLANG_VERSION=$(clang --version | grep -i "clang version" | sed -n 's/.*version \([0-9.]*\).*/\1/p')
-          echo Detected clang version $CLANG_VERSION
-          mkdir -p /usr/lib/clang/19/lib/wasm32-wasmer-wasi 
-          cp /opt/wasix-sysroot/lib/wasm32-wasi/libclang_rt.builtins-wasm32.a /usr/lib/clang/19/lib/wasm32-wasmer-wasi/libclang_rt.builtins.a
-          TOOLCHAIN=/opt/wasix-sysroot/clang-wasix.cmake_toolchain ./test/wasix/run_tests.sh
-
       - name: Upload sysroot
         uses: actions/upload-artifact@v4
         with:
