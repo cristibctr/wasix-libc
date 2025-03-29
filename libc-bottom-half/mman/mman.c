@@ -24,38 +24,64 @@ struct map {
     int fd;
 };
 
+// Helper macros for optional flag checks
+#ifdef MAP_SHARED_VALIDATE
+#define CHECK_MAP_SHARED_VALIDATE || ((flags & MAP_SHARED_VALIDATE) == MAP_SHARED_VALIDATE)
+#else
+#define CHECK_MAP_SHARED_VALIDATE
+#endif
+
+#ifdef MAP_NORESERVE
+#define CHECK_MAP_NORESERVE || ((flags & MAP_NORESERVE) != 0)
+#else
+#define CHECK_MAP_NORESERVE
+#endif
+
+#ifdef MAP_GROWSDOWN
+#define CHECK_MAP_GROWSDOWN || ((flags & MAP_GROWSDOWN) != 0)
+#else
+#define CHECK_MAP_GROWSDOWN
+#endif
+
+#ifdef MAP_HUGETLB
+#define CHECK_MAP_HUGETLB || ((flags & MAP_HUGETLB) != 0)
+#else
+#define CHECK_MAP_HUGETLB
+#endif
+
+#ifdef MAP_FIXED_NOREPLACE
+#define CHECK_MAP_FIXED_NOREPLACE || ((flags & MAP_FIXED_NOREPLACE) != 0)
+#else
+#define CHECK_MAP_FIXED_NOREPLACE
+#endif
+
 void *mmap(void *addr, size_t length, int prot, int flags,
            int fd, off_t offset) {
-    // Check for unsupported flags.
-    if ((flags & (MAP_PRIVATE | MAP_SHARED)) == 0 ||
-        (flags & MAP_FIXED) != 0 ||
-#ifdef MAP_SHARED_VALIDATE
-        (flags & MAP_SHARED_VALIDATE) == MAP_SHARED_VALIDATE ||
-#endif
-#ifdef MAP_NORESERVE
-        (flags & MAP_NORESERVE) != 0 ||
-#endif
-#ifdef MAP_GROWSDOWN
-        (flags & MAP_GROWSDOWN) != 0 ||
-#endif
-#ifdef MAP_HUGETLB
-        (flags & MAP_HUGETLB) != 0 ||
-#endif
-#ifdef MAP_FIXED_NOREPLACE
-        (flags & MAP_FIXED_NOREPLACE) != 0 ||
-#endif
-        0)
+    // Check for unsupported flags using helper macros.
+    if (((flags & (MAP_PRIVATE | MAP_SHARED)) == 0) || // Must have exactly one of PRIVATE or SHARED
+        ((flags & MAP_FIXED) != 0)                     // FIXED is not supported
+        CHECK_MAP_SHARED_VALIDATE                      // Optional: SHARED_VALIDATE is not supported
+        CHECK_MAP_NORESERVE                            // Optional: NORESERVE is not supported
+        CHECK_MAP_GROWSDOWN                            // Optional: GROWSDOWN is not supported
+        CHECK_MAP_HUGETLB                              // Optional: HUGETLB is not supported
+        CHECK_MAP_FIXED_NOREPLACE                      // Optional: FIXED_NOREPLACE is not supported
+       )
     {
         errno = EINVAL;
         return MAP_FAILED;
     }
 
-    // Check for unsupported protection requests.
-    if (prot == PROT_NONE ||
+// Helper macro for optional protection check
 #ifdef PROT_EXEC
-        (prot & PROT_EXEC) != 0 ||
+#define CHECK_PROT_EXEC || ((prot & PROT_EXEC) != 0)
+#else
+#define CHECK_PROT_EXEC
 #endif
-        0)
+
+    // Check for unsupported protection requests using helper macro.
+    if ((prot == PROT_NONE) // PROT_NONE is not supported (mapping must be readable or writable)
+        CHECK_PROT_EXEC     // Optional: PROT_EXEC is not supported
+       )
     {
         errno = EINVAL;
         return MAP_FAILED;
@@ -148,6 +174,80 @@ int munmap(void *addr, size_t length) {
 
     // Success!
     return 0;
+}
+
+// Note: This implementation does not support MREMAP_FIXED.
+void *mremap(void *old_address, size_t old_size, size_t new_size, int flags, ...) {
+    if ((flags & MREMAP_FIXED)) {
+        errno = EINVAL;
+        return MAP_FAILED;
+    }
+
+    struct map *map = (struct map *)old_address - 1;
+
+    if (map->length != old_size) {
+        errno = EINVAL;
+        return MAP_FAILED;
+    }
+
+    if (new_size == 0) {
+        if (munmap(old_address, old_size) == 0) {
+            errno = ENOMEM;
+            return MAP_FAILED;
+        } else {
+            return MAP_FAILED;
+        }
+    }
+
+    if (new_size == old_size) {
+        return old_address;
+    }
+
+    size_t new_buf_len = 0;
+    if (__builtin_add_overflow(new_size, sizeof(struct map), &new_buf_len)) {
+        errno = ENOMEM;
+        return MAP_FAILED;
+    }
+
+    struct map *new_map = realloc(map, new_buf_len);
+    if (!new_map) {
+        errno = ENOMEM;
+        return MAP_FAILED;
+    }
+
+    new_map->length = new_size;
+    void *new_address = new_map + 1;
+
+    if (new_size > old_size) {
+        size_t growth = new_size - old_size;
+        char *growth_start = (char *)new_address + old_size;
+
+        if ((new_map->flags & MAP_ANON) == 0) {
+            off_t read_offset = new_map->offset + old_size;
+            int fd = new_map->fd;
+            size_t remaining = growth;
+            char *read_ptr = growth_start;
+
+            while (remaining > 0) {
+                ssize_t nread = pread(fd, read_ptr, remaining, read_offset);
+                if (nread < 0) {
+                    if (errno == EINTR) continue;
+                    return MAP_FAILED;
+                }
+                if (nread == 0) {
+                    memset(read_ptr, 0, remaining);
+                    break;
+                }
+                remaining -= (size_t)nread;
+                read_offset += (size_t)nread;
+                read_ptr += (size_t)nread;
+            }
+        } else {
+            memset(growth_start, 0, growth);
+        }
+    }
+
+    return new_address;
 }
 
 int msync (void *addr, size_t length, int flags) {

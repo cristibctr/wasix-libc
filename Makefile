@@ -102,6 +102,7 @@ LIBC_TOP_HALF_MUSL_SOURCES = \
         misc/nftw.c \
 	misc/realpath.c \
         misc/syslog.c \
+        misc/mntent.c \
         errno/strerror.c \
         \
         network/services.c \
