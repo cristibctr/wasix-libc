@@ -24,7 +24,6 @@ cat > libc-bottom-half/headers/public/wasi/api.h<<EOF
 EOF
 
 make -j 14
-rm -f sysroot/lib/wasm32-wasi/libc-printscan-long-double.a
 
 # Build C++ sysroot
 mkdir -p build/libcxx

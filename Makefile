@@ -524,7 +524,7 @@ ifeq ($(TARGET_TRIPLE), wasm32-wasi)
 	rm libc-old.a
 endif
 
-	rm -f sysroot/lib/wasm32-wasi/libc-printscan-log-double.a
+	rm -f sysroot/lib/wasm32-wasi/libc-printscan-long-double.a
 	rsync -rtvu --delete ./sysroot/ ./sysroot32/
 
 $(SYSROOT_LIB)/libc.a: $(LIBC_OBJS)

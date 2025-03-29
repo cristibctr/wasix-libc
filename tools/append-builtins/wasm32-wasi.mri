@@ -1,5 +1,8 @@
 create libc.a
 addlib libc-old.a
 addlib ../../../libclang_rt.builtins-wasm32.a
+ADDLIB libwasi-emulated-mman.a
+ADDLIB libwasi-emulated-process-clocks.a
+ADDLIB libwasi-emulated-getpid.a
 save
 end
