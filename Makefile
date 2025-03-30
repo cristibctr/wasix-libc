@@ -19,6 +19,8 @@ THREAD_MODEL ?= posix
 MALLOC_IMPL ?= dlmalloc
 # yes or no
 BUILD_LIBC_TOP_HALF ?= yes
+# yes or no; provides dummy statfs/statvfs implementations
+WASI_EMULATED_STATFS ?= yes
 # The directory where we will store intermediate artifacts.
 OBJDIR ?= build/$(TARGET_TRIPLE)
 
@@ -67,14 +69,22 @@ LIBC_BOTTOM_HALF_ALL_SOURCES := $(LIBC_BOTTOM_HALF_ALL_SOURCES) $(LIBC_BOTTOM_HA
 # Add the WASIX file locking implementation
 LIBC_BOTTOM_HALF_ALL_SOURCES := $(LIBC_BOTTOM_HALF_ALL_SOURCES) $(LIBC_BOTTOM_HALF_DIR)/sources/wasix_fcntl_locks.c
 
+# Exclude the new stub files from the generic mman library
 LIBWASI_EMULATED_MMAN_SOURCES = \
-    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/mman -name \*.c))
+    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/mman -name \*.c -not -name madvise.c -not -name mincore.c))
+# Define sources for the new libraries
+LIBWASI_EMULATED_MADVISE_SOURCES = \
+    $(LIBC_BOTTOM_HALF_DIR)/mman/madvise.c
+LIBWASI_EMULATED_MINCORE_SOURCES = \
+    $(LIBC_BOTTOM_HALF_DIR)/mman/mincore.c
 LIBWASI_EMULATED_PROCESS_CLOCKS_SOURCES = \
     $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/clocks -name \*.c))
 LIBWASI_EMULATED_GETPID_SOURCES = \
     $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/getpid -name \*.c))
 LIBWASI_EMULATED_SIGNAL_SOURCES = \
     $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/signal -name \*.c))
+LIBWASI_EMULATED_STATFS_SOURCES = \
+    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/statfs -name \*.c))
 LIBC_BOTTOM_HALF_CRT_SOURCES = $(wildcard $(LIBC_BOTTOM_HALF_DIR)/crt/*.c)
 LIBC_TOP_HALF_DIR = libc-top-half
 LIBC_TOP_HALF_MUSL_DIR = $(LIBC_TOP_HALF_DIR)/musl
@@ -429,6 +439,9 @@ LIBWASI_EMULATED_MMAN_OBJS = $(call objs,$(LIBWASI_EMULATED_MMAN_SOURCES))
 LIBWASI_EMULATED_PROCESS_CLOCKS_OBJS = $(call objs,$(LIBWASI_EMULATED_PROCESS_CLOCKS_SOURCES))
 LIBWASI_EMULATED_GETPID_OBJS = $(call objs,$(LIBWASI_EMULATED_GETPID_SOURCES))
 LIBWASI_EMULATED_SIGNAL_OBJS = $(call objs,$(LIBWASI_EMULATED_SIGNAL_SOURCES))
+LIBWASI_EMULATED_STATFS_OBJS = $(call objs,$(LIBWASI_EMULATED_STATFS_SOURCES))
+LIBWASI_EMULATED_MADVISE_OBJS = $(call objs,$(LIBWASI_EMULATED_MADVISE_SOURCES))
+LIBWASI_EMULATED_MINCORE_OBJS = $(call objs,$(LIBWASI_EMULATED_MINCORE_SOURCES))
 LIBC_BOTTOM_HALF_CRT_OBJS = $(call objs,$(LIBC_BOTTOM_HALF_CRT_SOURCES))
 
 # These variables describe the locations of various files and
@@ -539,6 +552,12 @@ $(SYSROOT_LIB)/libwasi-emulated-process-clocks.a: $(LIBWASI_EMULATED_PROCESS_CLO
 
 $(SYSROOT_LIB)/libwasi-emulated-getpid.a: $(LIBWASI_EMULATED_GETPID_OBJS)
 
+$(SYSROOT_LIB)/libwasi-emulated-statfs.a: $(LIBWASI_EMULATED_STATFS_OBJS)
+
+$(SYSROOT_LIB)/libwasi-emulated-madvise.a: $(LIBWASI_EMULATED_MADVISE_OBJS)
+
+$(SYSROOT_LIB)/libwasi-emulated-mincore.a: $(LIBWASI_EMULATED_MINCORE_OBJS)
+
 %.a:
 	@mkdir -p "$(@D)"
 	# On Windows, the commandline for the ar invocation got too long, so it needs to be split up.
@@ -606,7 +625,7 @@ $(LIBC_TOP_HALF_ALL_OBJS) $(MUSL_PRINTSCAN_LONG_DOUBLE_OBJS) $(MUSL_PRINTSCAN_NO
     -Wno-dangling-else \
     -Wno-unknown-pragmas
 
-$(LIBWASI_EMULATED_PROCESS_CLOCKS_OBJS): CFLAGS += \
+$(LIBWASI_EMULATED_PROCESS_CLOCKS_OBJS) $(LIBWASI_EMULATED_MADVISE_OBJS) $(LIBWASI_EMULATED_MINCORE_OBJS): CFLAGS += \
     -I$(LIBC_BOTTOM_HALF_CLOUDLIBC_SRC)
 
 include_dirs:
@@ -645,7 +664,10 @@ libc: include_dirs \
     $(SYSROOT_LIB)/libc-printscan-no-floating-point.a \
     $(SYSROOT_LIB)/libwasi-emulated-mman.a \
     $(SYSROOT_LIB)/libwasi-emulated-process-clocks.a \
-    $(SYSROOT_LIB)/libwasi-emulated-getpid.a
+    $(SYSROOT_LIB)/libwasi-emulated-getpid.a \
+    $(SYSROOT_LIB)/libwasi-emulated-madvise.a \
+    $(SYSROOT_LIB)/libwasi-emulated-mincore.a \
+    $(if $(filter yes,$(WASI_EMULATED_STATFS)), $(SYSROOT_LIB)/libwasi-emulated-statfs.a)
 
 finish: startup_files libc
 	#
@@ -765,5 +787,8 @@ clean:
 	$(RM) -r "$(SYSROOT)"
 	$(RM) -r "$(SYSROOT)32"
 	$(RM) -r "$(SYSROOT)64"
+	$(RM) $(LIBWASI_EMULATED_STATFS_OBJS)
+	$(RM) $(LIBWASI_EMULATED_MADVISE_OBJS)
+	$(RM) $(LIBWASI_EMULATED_MINCORE_OBJS)
 
-.PHONY: default startup_files libc finish install include_dirs clean
+.PHONY: default startup_files libc finish install include_dirs clean check-symbols
